@@ -130,22 +130,31 @@ def load_grepolis_data():
 
 @st.cache_data(ttl=900)
 def load_alliance_data():
-    """Carga datos de alianzas"""
+    """Carga datos de alianzas con diagnóstico mejorado"""
     try:
         url = "https://es137.grepolis.com/data/alliance.txt"
         response = requests.get(url, timeout=30)
         
         if response.status_code == 200:
+            # Verificar si el archivo tiene contenido
+            if len(response.text.strip()) == 0:
+                return None  # Archivo vacío
+            
             alliance_data = pd.read_csv(
                 io.StringIO(response.text),
                 sep=',',
                 names=['ID_Alianza', 'Nombre_Alianza', 'Puntos_Alianza', 'Ranking_Alianza', 'Miembros']
             )
+            
+            # Verificar si los datos son válidos
+            if len(alliance_data) == 0:
+                return None
+                
             return alliance_data
         else:
-            return None
-    except:
-        return None
+            return None  # Error HTTP
+    except Exception as e:
+        return None  # Error de conexión o parsing
 
 @st.cache_data(ttl=900)
 def load_towns_data():
@@ -182,12 +191,14 @@ mi_jugador = st.sidebar.text_input(
     help="Escribe tu nombre exacto como aparece en el juego"
 )
 
-# Selector de alianza mejorado
+# Selector de alianza mejorado con detección inteligente
 alliance_data_sidebar = load_alliance_data()
-selected_alliance_name = "Sin alianza"  # Valor por defecto
-mi_alianza_id = 182  # Valor por defecto
+selected_alliance_name = "R.D.M.P"  # Tu alianza por defecto
+mi_alianza_id = 182  # Tu ID por defecto
 
 if alliance_data_sidebar is not None:
+    st.sidebar.success("✅ Datos de alianzas cargados correctamente")
+    
     # Ordenar alianzas por ranking (mejores primero)
     alliance_options = alliance_data_sidebar.sort_values('Ranking_Alianza')
     
@@ -217,7 +228,7 @@ if alliance_data_sidebar is not None:
     # Mostrar información adicional de la alianza seleccionada
     if selected_alliance_name != "Sin alianza":
         alianza_info = alliance_options[alliance_options['Nombre_Alianza'] == selected_alliance_name].iloc[0]
-        st.sidebar.success(f"""
+        st.sidebar.info(f"""
         **🏛️ {selected_alliance_name}**
         🏆 Ranking: #{int(alianza_info['Ranking_Alianza'])}
         👥 Miembros: {int(alianza_info['Miembros'])}
@@ -225,9 +236,25 @@ if alliance_data_sidebar is not None:
         📈 Promedio: {int(alianza_info['Puntos_Alianza']/alianza_info['Miembros']):,} pts/miembro
         """)
 else:
-    # Fallback si no se cargan las alianzas
-    mi_alianza_id = st.sidebar.number_input("🛡️ ID de tu Alianza", min_value=1, value=182, step=1)
-    st.sidebar.warning("⚠️ No se pudieron cargar las alianzas")
+    # Modo manual cuando no hay datos de alianzas
+    st.sidebar.info("ℹ️ Datos de alianzas no disponibles - Modo manual activado")
+    
+    # Input manual para alianza
+    mi_alianza_id = st.sidebar.number_input("🛡️ ID de tu Alianza", min_value=0, value=182, step=1)
+    
+    # Crear alianzas "virtuales" basadas en los datos de jugadores
+    if players_data is not None:
+        alianzas_detectadas = players_data[players_data['ID_Alianza'] != 0]['ID_Alianza'].value_counts().head(10)
+        
+        if len(alianzas_detectadas) > 0:
+            st.sidebar.write("**🔍 Alianzas detectadas en datos de jugadores:**")
+            for alianza_id, miembros in alianzas_detectadas.items():
+                if alianza_id == mi_alianza_id:
+                    st.sidebar.write(f"🎯 **ID {alianza_id}:** {miembros} miembros ← Tu alianza")
+                else:
+                    st.sidebar.write(f"• ID {alianza_id}: {miembros} miembros")
+            
+            selected_alliance_name = f"Alianza ID: {mi_alianza_id}"
 
 st.sidebar.markdown("---")
 
@@ -340,19 +367,23 @@ if not mi_data.empty:
     with col5:
         # Manejo seguro de información de alianza
         if yo['ID_Alianza'] == 0:
-            alianza_info = "Sin alianza"
+            alianza_display = "Sin alianza"
         else:
-            # Buscar nombre de alianza si está disponible
+            # Intentar obtener nombre real de la alianza
             if alliance_data is not None:
                 alianza_match = alliance_data[alliance_data['ID_Alianza'] == yo['ID_Alianza']]
                 if not alianza_match.empty:
-                    alianza_info = alianza_match.iloc[0]['Nombre_Alianza']
+                    alianza_display = alianza_match.iloc[0]['Nombre_Alianza']
                 else:
-                    alianza_info = f"ID: {yo['ID_Alianza']:.0f}"
+                    alianza_display = f"ID: {yo['ID_Alianza']:.0f}"
             else:
-                alianza_info = f"ID: {yo['ID_Alianza']:.0f}"
+                # Si no hay datos de alianzas, usar nombre configurado o ID
+                if yo['ID_Alianza'] == mi_alianza_id:
+                    alianza_display = "R.D.M.P"  # Tu alianza conocida
+                else:
+                    alianza_display = f"ID: {yo['ID_Alianza']:.0f}"
         
-        st.metric("🛡️ Alianza", alianza_info)
+        st.metric("🛡️ Alianza", alianza_display)
     
     # Análisis de crecimiento personal
     if not modo_compacto:
