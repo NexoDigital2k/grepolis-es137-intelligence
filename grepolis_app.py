@@ -7,6 +7,11 @@ import plotly.graph_objects as go
 from datetime import datetime
 import time
 
+# Inicialización segura de variables
+players_data = None
+alliance_data = None
+towns_data = None
+
 # Configuración de la página
 st.set_page_config(
     page_title="🏛️ GrepoIntel ES137 | R.D.M.P | Desarrollado por: Im a New Rookie",
