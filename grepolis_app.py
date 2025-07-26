@@ -9,7 +9,7 @@ import time
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Grepolis ES137 Intelligence",
+    page_title="🏛️ GrepoIntel ES137 | R.D.M.P | Desarrollado por: Im a New Rookie",
     page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -95,16 +95,53 @@ def load_alliance_data():
         return None
 
 # Header principal
-st.markdown('<h1 class="main-header">🏛️ Grepolis ES137 Intelligence</h1>', unsafe_allow_html=True)
+st.markdown('<h1 class="main-header">🏛️ Grest.markdown('<h1 class="main-header">🏛️ GrepoIntel ES137 | R.D.M.P | Desarrollado por: Im a New Rookie</h1>', unsafe_allow_html=True)polis ES137 Intelligence</h1>', unsafe_allow_html=True)
 
 # Sidebar para configuración
 st.sidebar.title("⚙️ Configuración")
 
-# Configuración de alianza
-st.sidebar.subheader("🛡️ Tu Alianza")
-mi_alianza_id = st.sidebar.number_input("ID de tu Alianza", min_value=1, value=182, step=1)
-mi_jugador = st.sidebar.text_input("Tu nombre de jugador", value="Im+a+New+Rookie")
+# Configuración personal
+st.sidebar.subheader("👤 Tu Información")
+mi_jugador = st.sidebar.text_input("🎮 Tu nombre de jugador", value="Im+a+New+Rookie", help="Escribe tu nombre exacto como aparece en el juego")
 
+# Selector de alianza por nombre (cargamos datos primero)
+alliance_data_sidebar = load_alliance_data()
+if alliance_data_sidebar is not None:
+    # Ordenar alianzas por ranking (mejores primero)
+    alliance_options = alliance_data_sidebar.sort_values('Ranking_Alianza')
+    
+    # Crear lista de nombres de alianzas
+    alliance_names = ["Sin alianza"] + alliance_options['Nombre_Alianza'].tolist()
+    
+    # Buscar el índice de R.D.M.P (tu alianza)
+    try:
+        rdmp_index = alliance_names.index("R.D.M.P") if "R.D.M.P" in alliance_names else 0
+    except:
+        rdmp_index = 0
+    
+    # Selector de alianza
+    selected_alliance_name = st.sidebar.selectbox(
+        "🛡️ Tu Alianza", 
+        alliance_names, 
+        index=rdmp_index,
+        help="Selecciona tu alianza de la lista ordenada por ranking"
+    )
+    
+    # Obtener ID de la alianza seleccionada
+    if selected_alliance_name == "Sin alianza":
+        mi_alianza_id = 0
+    else:
+        mi_alianza_id = int(alliance_options[alliance_options['Nombre_Alianza'] == selected_alliance_name]['ID_Alianza'].iloc[0])
+        
+    # Mostrar información adicional de la alianza seleccionada
+    if selected_alliance_name != "Sin alianza":
+        alianza_info = alliance_options[alliance_options['Nombre_Alianza'] == selected_alliance_name].iloc[0]
+        st.sidebar.info(f"🏆 Ranking: #{int(alianza_info['Ranking_Alianza'])}\n👥 Miembros: {int(alianza_info['Miembros'])}\n💰 Puntos: {int(alianza_info['Puntos_Alianza']):,}")
+else:
+    # Fallback si no se cargan las alianzas
+    mi_alianza_id = st.sidebar.number_input("🛡️ ID de tu Alianza", min_value=1, value=182, step=1)
+    st.sidebar.warning("⚠️ No se pudieron cargar las alianzas")
+    
 # Opciones de análisis
 st.sidebar.subheader("📊 Análisis")
 mostrar_targets = st.sidebar.checkbox("Mostrar Targets", value=True)
