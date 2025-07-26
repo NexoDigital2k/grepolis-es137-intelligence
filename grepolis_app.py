@@ -184,6 +184,9 @@ mi_jugador = st.sidebar.text_input(
 
 # Selector de alianza mejorado
 alliance_data_sidebar = load_alliance_data()
+selected_alliance_name = "Sin alianza"  # Valor por defecto
+mi_alianza_id = 182  # Valor por defecto
+
 if alliance_data_sidebar is not None:
     # Ordenar alianzas por ranking (mejores primero)
     alliance_options = alliance_data_sidebar.sort_values('Ranking_Alianza')
@@ -335,7 +338,20 @@ if not mi_data.empty:
         st.metric("🏘️ Ciudades", f"{yo['Ciudades']:.0f}")
     
     with col5:
-        alianza_info = "Sin alianza" if yo['ID_Alianza'] == 0 else selected_alliance_name
+        # Manejo seguro de información de alianza
+        if yo['ID_Alianza'] == 0:
+            alianza_info = "Sin alianza"
+        else:
+            # Buscar nombre de alianza si está disponible
+            if alliance_data is not None:
+                alianza_match = alliance_data[alliance_data['ID_Alianza'] == yo['ID_Alianza']]
+                if not alianza_match.empty:
+                    alianza_info = alianza_match.iloc[0]['Nombre_Alianza']
+                else:
+                    alianza_info = f"ID: {yo['ID_Alianza']:.0f}"
+            else:
+                alianza_info = f"ID: {yo['ID_Alianza']:.0f}"
+        
         st.metric("🛡️ Alianza", alianza_info)
     
     # Análisis de crecimiento personal
