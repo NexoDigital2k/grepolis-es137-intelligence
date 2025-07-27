@@ -410,136 +410,256 @@ if tab_selection == "🌍 SERVIDOR":
 # PESTAÑA: ALIANZA
 # =============================================================================
 elif tab_selection == "🛡️ ALIANZA":
-    st.header("🛡️ Información de la Alianza")
+    st.header("🛡️ R.D.M.P - Centro de Comando")
     
-    if alliance_data is not None:
-        # Encontrar información de tu alianza
-        mi_alianza_data = alliance_data[alliance_data['ID_Alianza'] == mi_alianza_id]
-        
-        if not mi_alianza_data.empty:
-            alianza = mi_alianza_data.iloc[0]
-            
-            # Información general de la alianza
-            st.subheader(f"🏠 {alianza['Nombre_Alianza']}")
-            
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric("🏆 Ranking", f"#{int(alianza['Ranking_Alianza'])}")
-            
-            with col2:
-                st.metric("💰 Puntos", f"{int(alianza['Puntos_Alianza']):,}")
-            
-            with col3:
-                st.metric("👥 Miembros", f"{int(alianza['Miembros'])}")
-            
-            with col4:
-                promedio = int(alianza['Puntos_Alianza'] / alianza['Miembros'])
-                st.metric("📊 Promedio", f"{promedio:,} pts/miembro")
-            
-            st.markdown("---")
-            
-            # Miembros de la alianza
-            st.subheader("👥 Miembros de la Alianza")
-            
-            miembros = players_with_activity[players_with_activity['ID_Alianza'] == mi_alianza_id]
-            
-            if len(miembros) > 0:
-                miembros_sorted = miembros.sort_values('Puntos', ascending=False)
-                
-                # Estadísticas de miembros
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    miembros_activos = len(miembros[miembros['Estado'] == '🟢 Activo'])
-                    st.metric("🟢 Miembros Activos", f"{miembros_activos}/{len(miembros)}")
-                
-                with col2:
-                    total_cities = miembros['Ciudades'].sum()
-                    st.metric("🏘️ Total Ciudades", f"{int(total_cities)}")
-                
-                with col3:
-                    mejor_miembro = miembros_sorted.iloc[0]
-                    st.metric("👑 Mejor Miembro", f"#{int(mejor_miembro['Ranking'])}")
-                
-                # Lista de miembros
-                miembros_display = miembros_sorted[['Ranking', 'Nombre', 'Puntos', 'Ciudades', 'Estado']].copy()
-                miembros_display['Ranking'] = miembros_display['Ranking'].astype(int)
-                miembros_display['Puntos'] = miembros_display['Puntos'].astype(int)
-                miembros_display['Ciudades'] = miembros_display['Ciudades'].astype(int)
-                
-                # Destacar tu jugador
-                def highlight_player(row):
-                    if row['Nombre'] == mi_jugador:
-                        return ['background-color: #90EE90; font-weight: bold'] * len(row)
-                    return [''] * len(row)
-                
-                st.dataframe(
-                    miembros_display,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Ranking": st.column_config.NumberColumn("🏆 Ranking", format="#%d"),
-                        "Nombre": st.column_config.TextColumn("👤 Nombre"),
-                        "Puntos": st.column_config.NumberColumn("💰 Puntos", format="%d"),
-                        "Ciudades": st.column_config.NumberColumn("🏘️ Ciudades", format="%d"),
-                        "Estado": st.column_config.TextColumn("📊 Estado")
-                    }
-                )
-                
-                # Gráfico de distribución de puntos en la alianza
-                fig_alliance = px.bar(
-                    miembros_sorted.head(15),
-                    x='Nombre',
-                    y='Puntos',
-                    title=f"Top 15 Miembros de {alianza['Nombre_Alianza']}",
-                    color='Puntos',
-                    color_continuous_scale='viridis'
-                )
-                fig_alliance.update_xaxis(tickangle=45)
-                st.plotly_chart(fig_alliance, use_container_width=True)
-            
+    # Obtener miembros de R.D.M.P (ID 182)
+    miembros_rdmp = players_with_activity[players_with_activity['ID_Alianza'] == mi_alianza_id].copy()
+    
+    if len(miembros_rdmp) > 0:
+        # Información general de R.D.M.P
+        if alliance_data is not None:
+            mi_alianza_data = alliance_data[alliance_data['ID_Alianza'] == mi_alianza_id]
+            if not mi_alianza_data.empty:
+                alianza = mi_alianza_data.iloc[0]
+                nombre_alianza = alianza['Nombre_Alianza']
+                ranking_alianza = int(alianza['Ranking_Alianza'])
+                puntos_alianza = int(alianza['Puntos_Alianza'])
             else:
-                st.warning("❌ No se encontraron miembros de la alianza")
-        
+                nombre_alianza = "R.D.M.P"
+                ranking_alianza = "N/A"
+                puntos_alianza = int(miembros_rdmp['Puntos'].sum())
         else:
-            st.warning(f"❌ No se encontró la alianza con ID: {mi_alianza_id}")
+            nombre_alianza = "R.D.M.P"
+            ranking_alianza = "N/A"
+            puntos_alianza = int(miembros_rdmp['Puntos'].sum())
+        
+        # Header de la alianza
+        st.subheader(f"🏠 {nombre_alianza} - Estado Operacional")
+        
+        # Métricas principales de la alianza
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric("🏆 Ranking", f"#{ranking_alianza}")
+        
+        with col2:
+            st.metric("💰 Puntos Totales", f"{puntos_alianza:,}")
+        
+        with col3:
+            st.metric("👥 Miembros Activos", f"{len(miembros_rdmp)}")
+        
+        with col4:
+            promedio_pts = int(miembros_rdmp['Puntos'].mean())
+            st.metric("📊 Promedio", f"{promedio_pts:,} pts")
+        
+        with col5:
+            total_ciudades = int(miembros_rdmp['Ciudades'].sum())
+            st.metric("🏘️ Total Ciudades", f"{total_ciudades}")
         
         st.markdown("---")
         
-        # Ranking de alianzas
-        st.subheader("🏆 Ranking de Alianzas en ES137")
+        # Análisis de efectividad militar
+        st.subheader("⚔️ Análisis Militar de R.D.M.P")
         
-        top_alliances = alliance_data.head(20).copy()
-        top_alliances['Promedio'] = (top_alliances['Puntos_Alianza'] / top_alliances['Miembros']).astype(int)
+        # Clasificar miembros por capacidad militar
+        miembros_rdmp['Categoria_Militar'] = pd.cut(
+            miembros_rdmp['Puntos'],
+            bins=[0, 1000, 3000, 6000, 15000, float('inf')],
+            labels=['🟥 Recluta', '🟨 Soldado', '🟦 Veterano', '🟪 Elite', '🟫 Legendario']
+        )
         
-        # Destacar tu alianza
-        def highlight_alliance(row):
-            if row['ID_Alianza'] == mi_alianza_id:
-                return ['background-color: #FFD700; font-weight: bold'] * len(row)
+        # Calcular potencial militar estimado
+        miembros_rdmp['Potencial_Militar'] = (miembros_rdmp['Puntos'] * 0.6 + miembros_rdmp['Ciudades'] * 200).astype(int)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Distribución por categoría militar
+            categoria_counts = miembros_rdmp['Categoria_Militar'].value_counts()
+            
+            st.write("**🛡️ Distribución de Fuerzas:**")
+            for categoria, count in categoria_counts.items():
+                porcentaje = (count / len(miembros_rdmp)) * 100
+                st.write(f"{categoria}: {count} miembros ({porcentaje:.1f}%)")
+        
+        with col2:
+            # Estados de actividad
+            estado_counts = miembros_rdmp['Estado'].value_counts()
+            
+            st.write("**📊 Estado Operacional:**")
+            for estado, count in estado_counts.items():
+                porcentaje = (count / len(miembros_rdmp)) * 100
+                st.write(f"{estado}: {count} miembros ({porcentaje:.1f}%)")
+        
+        st.markdown("---")
+        
+        # Tabla detallada de miembros con información militar
+        st.subheader("👥 Roster Completo de R.D.M.P")
+        
+        # Filtros para la tabla
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            filtro_categoria = st.selectbox(
+                "🎯 Filtrar por Categoría:",
+                ["Todos"] + list(miembros_rdmp['Categoria_Militar'].unique())
+            )
+        
+        with col2:
+            filtro_estado = st.selectbox(
+                "📊 Filtrar por Estado:",
+                ["Todos"] + list(miembros_rdmp['Estado'].unique())
+            )
+        
+        with col3:
+            ordenar_por = st.selectbox(
+                "📈 Ordenar por:",
+                ["Puntos", "Ranking", "Potencial Militar", "Ciudades", "Nombre"]
+            )
+        
+        # Aplicar filtros
+        miembros_filtrados = miembros_rdmp.copy()
+        
+        if filtro_categoria != "Todos":
+            miembros_filtrados = miembros_filtrados[miembros_filtrados['Categoria_Militar'] == filtro_categoria]
+        
+        if filtro_estado != "Todos":
+            miembros_filtrados = miembros_filtrados[miembros_filtrados['Estado'] == filtro_estado]
+        
+        # Ordenar
+        if ordenar_por == "Puntos":
+            miembros_filtrados = miembros_filtrados.sort_values('Puntos', ascending=False)
+        elif ordenar_por == "Ranking":
+            miembros_filtrados = miembros_filtrados.sort_values('Ranking')
+        elif ordenar_por == "Potencial Militar":
+            miembros_filtrados = miembros_filtrados.sort_values('Potencial_Militar', ascending=False)
+        elif ordenar_por == "Ciudades":
+            miembros_filtrados = miembros_filtrados.sort_values('Ciudades', ascending=False)
+        elif ordenar_por == "Nombre":
+            miembros_filtrados = miembros_filtrados.sort_values('Nombre')
+        
+        # Preparar tabla para mostrar
+        tabla_miembros = miembros_filtrados[[
+            'Ranking', 'Nombre', 'Puntos', 'Ciudades', 'Categoria_Militar', 
+            'Estado', 'Potencial_Militar'
+        ]].copy()
+        
+        # Formatear números
+        tabla_miembros['Ranking'] = tabla_miembros['Ranking'].astype(int)
+        tabla_miembros['Puntos'] = tabla_miembros['Puntos'].astype(int)
+        tabla_miembros['Ciudades'] = tabla_miembros['Ciudades'].astype(int)
+        
+        # Cambiar nombres de columnas
+        tabla_miembros.columns = ['Ranking', 'Nombre', 'Puntos', 'Ciudades', 'Categoría', 'Estado', 'Pot. Militar']
+        
+        # Destacar tu jugador
+        def highlight_my_player(row):
+            if row['Nombre'] == mi_jugador:
+                return ['background-color: #90EE90; font-weight: bold'] * len(row)
             return [''] * len(row)
         
-        alliance_display = top_alliances[['Ranking_Alianza', 'Nombre_Alianza', 'Puntos_Alianza', 'Miembros', 'Promedio']].copy()
-        alliance_display.columns = ['Ranking', 'Alianza', 'Puntos', 'Miembros', 'Promedio']
-        alliance_display['Ranking'] = alliance_display['Ranking'].astype(int)
-        alliance_display['Puntos'] = alliance_display['Puntos'].astype(int)
-        alliance_display['Miembros'] = alliance_display['Miembros'].astype(int)
-        
         st.dataframe(
-            alliance_display,
+            tabla_miembros,
             use_container_width=True,
             hide_index=True,
             column_config={
                 "Ranking": st.column_config.NumberColumn("🏆 Ranking", format="#%d"),
-                "Alianza": st.column_config.TextColumn("🛡️ Alianza"),
+                "Nombre": st.column_config.TextColumn("👤 Nombre"),
                 "Puntos": st.column_config.NumberColumn("💰 Puntos", format="%d"),
-                "Miembros": st.column_config.NumberColumn("👥 Miembros", format="%d"),
-                "Promedio": st.column_config.NumberColumn("📊 Promedio", format="%d")
+                "Ciudades": st.column_config.NumberColumn("🏘️ Ciudades", format="%d"),
+                "Categoría": st.column_config.TextColumn("⚔️ Categoría"),
+                "Estado": st.column_config.TextColumn("📊 Estado"),
+                "Pot. Militar": st.column_config.NumberColumn("🎯 Potencial", format="%d", help="Estimación de capacidad militar")
             }
         )
+        
+        st.markdown("---")
+        
+        # Análisis de crecimiento de la alianza
+        st.subheader("📈 Análisis de Rendimiento")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Top performers de la alianza
+            st.write("**🏆 Top 5 R.D.M.P:**")
+            top_5 = miembros_rdmp.nlargest(5, 'Puntos')[['Nombre', 'Ranking', 'Puntos']]
+            
+            for i, (_, member) in enumerate(top_5.iterrows(), 1):
+                posicion_servidor = int(member['Ranking'])
+                st.write(f"{i}. **{member['Nombre']}** - #{posicion_servidor} ({int(member['Puntos']):,} pts)")
+        
+        with col2:
+            # Estadísticas de la alianza
+            st.write("**📊 Estadísticas Clave:**")
+            
+            mejor_ranking = int(miembros_rdmp['Ranking'].min())
+            peor_ranking = int(miembros_rdmp['Ranking'].max())
+            mediana_puntos = int(miembros_rdmp['Puntos'].median())
+            
+            st.write(f"🥇 Mejor miembro: Puesto #{mejor_ranking}")
+            st.write(f"📉 Miembro más bajo: Puesto #{peor_ranking}")
+            st.write(f"📊 Mediana de puntos: {mediana_puntos:,}")
+            st.write(f"🎯 Rango de influencia: {peor_ranking - mejor_ranking} posiciones")
+        
+        # Gráfico de distribución de puntos
+        fig_distribucion = px.histogram(
+            miembros_rdmp,
+            x='Puntos',
+            nbins=15,
+            title="Distribución de Puntos en R.D.M.P",
+            labels={'Puntos': 'Puntos del Jugador', 'count': 'Número de Miembros'},
+            color_discrete_sequence=['#667eea']
+        )
+        
+        fig_distribucion.update_layout(
+            xaxis_title="Puntos",
+            yaxis_title="Número de Miembros",
+            showlegend=False
+        )
+        
+        st.plotly_chart(fig_distribucion, use_container_width=True)
+        
+        # Comparación con otras alianzas (contexto)
+        if alliance_data is not None and not mi_alianza_data.empty:
+            st.markdown("---")
+            st.subheader("🎯 Posición Competitiva")
+            
+            # Encontrar alianzas cercanas en ranking
+            ranking_actual = int(alianza['Ranking_Alianza'])
+            
+            alianzas_cercanas = alliance_data[
+                (alliance_data['Ranking_Alianza'] >= ranking_actual - 3) &
+                (alliance_data['Ranking_Alianza'] <= ranking_actual + 3)
+            ].copy()
+            
+            # Destacar R.D.M.P
+            def highlight_rdmp(row):
+                if row['ID_Alianza'] == mi_alianza_id:
+                    return ['background-color: #FFD700; font-weight: bold'] * len(row)
+                return [''] * len(row)
+            
+            alianzas_display = alianzas_cercanas[['Ranking_Alianza', 'Nombre_Alianza', 'Puntos_Alianza', 'Miembros']].copy()
+            alianzas_display['Promedio'] = (alianzas_display['Puntos_Alianza'] / alianzas_display['Miembros']).astype(int)
+            alianzas_display.columns = ['Ranking', 'Alianza', 'Puntos', 'Miembros', 'Promedio']
+            
+            st.write("**⚔️ Alianzas Competidoras Cercanas:**")
+            st.dataframe(
+                alianzas_display,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Ranking": st.column_config.NumberColumn("🏆 Ranking", format="#%d"),
+                    "Alianza": st.column_config.TextColumn("🛡️ Alianza"),
+                    "Puntos": st.column_config.NumberColumn("💰 Puntos", format="%d"),
+                    "Miembros": st.column_config.NumberColumn("👥 Miembros", format="%d"),
+                    "Promedio": st.column_config.NumberColumn("📊 Promedio", format="%d")
+                }
+            )
     
     else:
-        st.error("❌ No se pudieron cargar los datos de alianzas")
+        st.warning(f"❌ No se encontraron miembros de la alianza con ID: {mi_alianza_id}")
+        st.info("💡 Verifica que el ID de alianza en el sidebar sea correcto (182 para R.D.M.P)")
 
 # =============================================================================
 # PESTAÑA: JUGADOR
